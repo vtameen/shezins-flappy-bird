@@ -5,6 +5,10 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+concurrency:
+  group: publish
+  cancel-in-progress: true
+jobs:
   pages:
     runs-on: ubuntu-latest
     steps:
