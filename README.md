@@ -1,6 +1,6 @@
 # Shezin's Flappy Bird 🐦
 
-Flap through 99 levels and 10 worlds — Meadow, Night, Snow Peaks, Desert, Jungle, Storm, Outer Space and Candyland.
+Flap through 150 levels and 15 worlds — Meadow, Night, Snow Peaks, Desert, Jungle, Storm, Outer Space, Candyland and more — then beat the Iron Vulture boss at level 150!
 Earn 🪙 coins and 💎 diamonds, buy 68 birds (and a 50,000-coin Flying Cat!) and upgrade them.
 
 **▶ Play online:** https://vtameen.github.io/shezins-flappy-bird/
