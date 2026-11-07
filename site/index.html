@@ -312,7 +312,7 @@ addEventListener('keydown', e => { if (e.code === 'Space' || e.code === 'ArrowUp
 
 // ================= GAME FLOW =================
 function hud(){ $('score').textContent = total; $('lvl').textContent = level >= MAX_LEVEL ? 'LEVEL 99 · MAX' : 'LEVEL ' + level; $('lvlFill').style.width = (level >= MAX_LEVEL ? 100 : passed/PER_LEVEL*100) + '%';
-  $('birdName').textContent = '🐦 ' + title(bird.name) + ' · ' + theme().name; $('found').textContent = `Birds ${save.owned.length}/${NAMES.length} · Best level ${save.best}`; $('coins').textContent = '🪙 ' + save.coins; $('gems').textContent = '💎 ' + save.gems + (shields ? '  🛡️×' + shields : ''); }
+  $('birdName').textContent = '🐦 ' + title(bird.name) + ' · ' + theme().name; $('found').textContent = `Birds ${save.owned.length}/${NAMES.length} · Best level ${save.best}`; $('coins').textContent = '🪙 ' + save.coins; $('gems').textContent = '💎 ' + save.gems + (shields ? '  🛡️×' + shields.toLocaleString() : ''); }
 let runCoins = 0;
 function begin(fromLevel){ audio(); runCoins = 0; runGems = 0; invuln = 0; shields = Math.max(U('shield') + U('lives')*3 + (U('fire') >= 3 ? 1 : 0), save.adminShields || 0); level = fromLevel; startLevel = fromLevel; passed = 0; total = 0; pipes = []; fireballs = []; gums = []; gust = 0; flash = 0; P.y = H*.42; P.vy = 0; P.alive = true; spawnT = .6; state = 'ready'; wonShown = level >= MAX_LEVEL;
   ['menu','over','book','win'].forEach(i => $(i).classList.add('hidden')); hud(); banner('Level ' + level, theme().name + ' · tap or Space to start'); }
@@ -326,7 +326,7 @@ function action(){ audio();
   if (state === 'play'){ P.vy = -330*bird.flap*(bird.grav >= 1.3 ? 1.08 : 1)*(1 + .07*U('wing'))*(level > 80 && level <= 90 ? .82 : 1); P.flapT = .28; sfx.flap(); }
 }
 function die(){ if (state !== 'play' || window.__god || invuln > 0) return;
-  if (shields > 0){ shields--; invuln = 1.4; P.vy = -280; flash = .6; tone(300, 900, .3, .1, 'sine'); for (let i=0;i<20;i++) puffs.push({x:P.x, y:P.y, vx:rnd(-200,200), vy:rnd(-200,200), r:rnd(4,9), t:rnd(.3,.6), c:'#8af0ff'}); banner('🛡️ Shield saved you!', shields + ' left this run'); hud(); return; } state = 'dead'; P.alive = false; sfx.hit(); for (let i=0;i<14;i++) feathers.push({x:P.x, y:P.y, vx:rnd(-120,120), vy:rnd(-200,40), r:rnd(0,6.28), vr:rnd(-6,6), t:1.6, c:Math.random()<.5 ? bird.wing : bird.body});
+  if (shields > 0){ shields--; invuln = 1.4; P.vy = -280; flash = .6; tone(300, 900, .3, .1, 'sine'); for (let i=0;i<20;i++) puffs.push({x:P.x, y:P.y, vx:rnd(-200,200), vy:rnd(-200,200), r:rnd(4,9), t:rnd(.3,.6), c:'#8af0ff'}); banner('🛡️ Shield saved you!', shields.toLocaleString() + ' left this run'); hud(); return; } state = 'dead'; P.alive = false; sfx.hit(); for (let i=0;i<14;i++) feathers.push({x:P.x, y:P.y, vx:rnd(-120,120), vy:rnd(-200,40), r:rnd(0,6.28), vr:rnd(-6,6), t:1.6, c:Math.random()<.5 ? bird.wing : bird.body});
   if (level > save.best){ save.best = level; } store();
   const cp = level;
   setTimeout(() => { $('oLvl').textContent = 'Level ' + level; $('oTxt').innerHTML = `${total} gaps cleared as a <b>${title(bird.name)}</b> · earned 🪙 ${runCoins}<br>Diamonds this run: 💎 ${runGems}<br>You have 🪙 ${save.coins} and 💎 ${save.gems} to spend.<br>Best level: ${save.best} · Checkpoint: start of Level ${cp}`; $('bCheck').textContent = 'RETRY LEVEL ' + cp; $('bCheck').onclick = () => begin(cp); $('bCheck').style.display = ''; $('over').classList.remove('hidden'); }, 700); }
@@ -718,7 +718,7 @@ unlockall       own every bird
 maxup           max all upgrades for your bird
 maxupall        max all upgrades for every bird
 god             toggle invincible mode
-shield 5        start every run with 5 shields (shield 0 = normal)
+shield 5        start every run with 5 shields (any amount, e.g. shield 1000000)
 babies 10       how many babies follow you (0-30, babies auto = normal)
 speed 0.5       game speed (0.25 - 3)
 gravity 0.5     gravity multiplier (0.2 - 3)
@@ -730,7 +730,7 @@ reset confirm   wipe all progress
 lock            lock the console again
 close           close the console`;
 function findBird(q){ q = q.toLowerCase().trim(); return BIRD_BY[q] ? q : NAMES.find(n => n.replace(/ /g,'') === q.replace(/ /g,'')) || NAMES.find(n => n.includes(q)); }
-function num(a, def){ const v = parseFloat(a); if (isNaN(v)) throw new Error('need a number'); return v; }
+function num(a, def){ const str = String(a).replace(/[,_ ]/g, '').toLowerCase(), mul = /m$/.test(str) ? 1e6 : /k$/.test(str) ? 1e3 : /b$/.test(str) ? 1e9 : 1; const v = parseFloat(str)*mul; if (isNaN(v)) throw new Error('need a number'); return v; }
 function setOrAdd(cur, arg){ return /^[+-]/.test(arg) ? cur + num(arg) : num(arg); }
 function hideOverlays(){ ['menu','over','book','win','upg'].forEach(i => $(i).classList.add('hidden')); }
 function runCmd(line){ const [cmd, ...rest] = line.split(/\s+/), arg = rest.join(' '), c = cmd.toLowerCase();
@@ -748,7 +748,7 @@ function runCmd(line){ const [cmd, ...rest] = line.split(/\s+/), arg = rest.join
     case 'maxup': save.up[bird.name] = Object.fromEntries(upsFor(bird).map(k => [k, 3])); store(); hud(); log('⬆ Maxed: ' + upsFor(bird).map(k => UPS[k].n).join(', ')); break;
     case 'maxupall': NAMES.forEach(n => save.up[n] = Object.fromEntries(upsFor(BIRD_BY[n]).map(k => [k, 3]))); store(); hud(); log('⬆ Every bird fully upgraded'); break;
     case 'god': window.__god = !window.__god; log(window.__god ? '😇 God mode ON — you cannot crash' : 'God mode OFF'); break;
-    case 'shield': case 'shields': { const n = clamp(Math.round(num(arg)), 0, 99); shields = n; save.adminShields = n; store(); hud(); log('🛡️ Shields: ' + n + (n ? ' — every run now starts with ' + n : ' — back to normal')); break; }
+    case 'shield': case 'shields': { const n = Math.max(0, Math.round(num(arg))); if (!isFinite(n)) throw new Error('need a number'); shields = n; save.adminShields = n; store(); hud(); log('🛡️ Shields: ' + n.toLocaleString() + (n ? ' — every run now starts with ' + n.toLocaleString() : ' — back to normal')); break; }
     case 'babies': case 'baby': { if (/^(auto|normal|reset)$/i.test(arg)){ save.babyCount = null; store(); log('🐣 Babies back to normal (3 after hatching in World 4)'); break; } const n = clamp(Math.round(num(arg)), 0, 30); save.babyCount = n; store(); log('🐣 Babies following you: ' + n + (n ? '' : ' (none)')); break; }
     case 'speed': timeScale = clamp(num(arg), .25, 3); log('⏩ Game speed ×' + timeScale); break;
     case 'gravity': gravMul = clamp(num(arg), .2, 3); log('🪶 Gravity ×' + gravMul); break;
