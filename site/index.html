@@ -223,8 +223,8 @@ let pipes = [], level = 1, passed = 0, total = 0, state = 'menu', t = 0, spawnT 
 
 
 // ================= LEVEL DIFFICULTY =================
-function cfg(L){ const k = (L-1)/(MAX_LEVEL-1), wi = Math.floor((L-1)/10), w = L >= MAX_LEVEL ? -1 : wi % 10;
-  return { speed: 150 + 190*Math.pow(k,.85) + wi*4 + (w===1 ? 25 : 0) - (w===9 ? 25 : 0), gap: 205 - 92*Math.pow(k,.8) - (w===5 ? 14 : 0) + (w===9 ? 22 : 0), spacing: 285 - 85*k, move: (L >= 15 ? Math.min(90, 14 + (L-15)*1.1) : 0)*(w===9 ? .65 : 1), moveSpeed: (.8 + k*1.6)*(w===6 ? 1.6 : w===9 ? 1.1 : 1), varY: 110 + 130*k, w }; }
+function cfg(L0){ const wi = Math.floor((L0-1)/10), w = L0 >= MAX_LEVEL ? -1 : wi % 10, L = L0 > 100 && L0 < MAX_LEVEL ? 50 + (L0-101)*.5 : L0, k = (L-1)/(MAX_LEVEL-1);
+  return { speed: 150 + 190*Math.pow(k,.85) + Math.floor((L-1)/10)*4 + (w===1 ? 25 : 0) - (w===9 ? 25 : 0), gap: 205 - 92*Math.pow(k,.8) - (w===5 ? 14 : 0) + (w===9 ? 22 : 0), spacing: 285 - 85*k, move: (L >= 15 ? Math.min(90, 14 + (L-15)*1.1) : 0)*(w===9 ? .65 : 1), moveSpeed: (.8 + k*1.6)*(w===6 ? 1.6 : w===9 ? 1.1 : 1), varY: 110 + 130*k, w }; }
 // each new world adds its own hazard on top of the rising speed / shrinking gaps
 const HAZARDS = ['Warm-up skies', 'Faster winds — everything speeds up', 'Darkness — you can only see near your bird', 'Blizzard — whiteouts hide the pipes', 'Heat thermals push you up and down',
   'Thick jungle — tighter gaps', 'Wobbly crystal pillars move faster', 'Storm gusts shove you around + lightning', 'ZERO-G — low gravity and flying asteroids', 'SUGAR RUSH — wobbly candy pillars and bouncing gumballs!'];
@@ -318,18 +318,18 @@ function hud(){ $('score').textContent = total; $('lvl').textContent = level >= 
 let runCoins = 0;
 // ================= BOSS (level 150) =================
 let boss = null, bullets = [];
-function startBoss(){ boss = {hp:60, max:60, x:W + 160, y:H*.4, t:0, aimT:1.6, spreadT:3.2, ringT:4.5, spinT:0, spinA:0, dead:false, deathT:0, muzzle:0}; pipes = []; bullets = []; fireballs = []; gums = [];
-  banner('⚠ BOSS FIGHT ⚠', 'The Iron Vulture! Dodge its bullets for 60 seconds'); [196,185,175,165].forEach((f,i) => tone(f, f*.98, .35, .12, 'sawtooth', i*.25)); }
+function startBoss(){ boss = {hp:40, max:40, x:W + 160, y:H*.4, t:0, aimT:1.6, spreadT:3.2, ringT:4.5, spinT:0, spinA:0, dead:false, deathT:0, muzzle:0}; pipes = []; bullets = []; fireballs = []; gums = [];
+  banner('⚠ BOSS FIGHT ⚠', 'The Iron Vulture! Dodge its bullets for 40 seconds'); [196,185,175,165].forEach((f,i) => tone(f, f*.98, .35, .12, 'sawtooth', i*.25)); }
 function shoot(ang, sp, r = 7, col = '#ff3a3a'){ const b = boss, mx = b.x - 78, my = b.y - 4; bullets.push({x:mx, y:my, vx:Math.cos(ang)*sp, vy:Math.sin(ang)*sp, r, col}); b.muzzle = .12; }
 function updateBoss(dt){ const b = boss; b.t += dt; const tx = W - 140; b.x += (tx - b.x)*Math.min(1, dt*1.6); b.y = H*.42 + Math.sin(b.t*.85)*H*.2 + Math.sin(b.t*2.1)*14; b.muzzle = Math.max(0, b.muzzle - dt);
   if (b.dead){ b.deathT += dt; b.y += b.deathT*b.deathT*90*dt*10; if (Math.random() < .6) puffs.push({x:b.x + rnd(-60,60), y:b.y + rnd(-40,40), vx:rnd(-120,120), vy:rnd(-160,40), r:rnd(8,20), t:rnd(.4,.8), c:['#ffd400','#ff6a1f','#3a3a3a','#ffffff'][Math.floor(Math.random()*4)]});
     if (b.deathT > 2.6 && !b.paid){ b.paid = true; addCoins(5000); addGems(100); if (level > save.best) save.best = level; store(); [523,659,784,1046,1318].forEach((f,i) => tone(f,f,.25,.1,'triangle',i*.12)); state = 'paused'; setTimeout(() => $('win').classList.remove('hidden'), 300); } return; }
   if (b.x > W) return; // still flying in
-  b.hp -= dt; const ph = b.hp > 40 ? 0 : b.hp > 20 ? 1 : 2; const toBird = Math.atan2(P.y - (b.y - 4), P.x - (b.x - 78));
-  b.aimT -= dt; if (b.aimT <= 0){ b.aimT = [1.05, .8, .6][ph]; shoot(toBird, 250 + ph*35); if (ph === 2){ shoot(toBird - .12, 250); shoot(toBird + .12, 250); } tone(700, 300, .08, .05, 'square'); }
-  b.spreadT -= dt; if (b.spreadT <= 0){ b.spreadT = [3.2, 2.7, 2.3][ph]; const n = ph === 2 ? 7 : 5; for (let i=0;i<n;i++) shoot(toBird + (i - (n-1)/2)*.16, 200, 6, '#ff8a1f'); tone(400, 150, .15, .07, 'sawtooth'); }
-  if (ph >= 1){ b.ringT -= dt; if (b.ringT <= 0){ b.ringT = ph === 1 ? 4.2 : 3.2; const n = ph === 1 ? 12 : 16, off = Math.random()*6; for (let i=0;i<n;i++) shoot(off + i/n*Math.PI*2, 165, 7, '#d04aff'); tone(220, 90, .3, .08, 'sawtooth'); } }
-  if (ph === 2 && Math.floor(b.t/2.5) % 2 === 0){ b.spinT -= dt; if (b.spinT <= 0){ b.spinT = .1; b.spinA += .42; shoot(Math.PI + Math.sin(b.spinA)*1.1, 210, 6, '#ffd400'); } }
+  b.hp -= dt; const ph = b.hp > b.max*.66 ? 0 : b.hp > b.max*.33 ? 1 : 2; const toBird = Math.atan2(P.y - (b.y - 4), P.x - (b.x - 78));
+  b.aimT -= dt; if (b.aimT <= 0){ b.aimT = [1.7, 1.4, 1.15][ph]; shoot(toBird, 165 + ph*15); tone(700, 300, .08, .05, 'square'); }
+  b.spreadT -= dt; if (b.spreadT <= 0){ b.spreadT = [4.2, 3.8, 3.3][ph]; const n = ph === 2 ? 5 : 3; for (let i=0;i<n;i++) shoot(toBird + (i - (n-1)/2)*.3, 140, 6, '#ff8a1f'); tone(400, 150, .15, .07, 'sawtooth'); }
+  if (ph >= 1){ b.ringT -= dt; if (b.ringT <= 0){ b.ringT = ph === 1 ? 6 : 5; const n = ph === 1 ? 8 : 10, off = Math.random()*6; for (let i=0;i<n;i++) shoot(off + i/n*Math.PI*2, 115, 7, '#d04aff'); tone(220, 90, .3, .08, 'sawtooth'); } }
+  if (false){ b.spinT -= dt; if (b.spinT <= 0){ b.spinT = .1; b.spinA += .42; shoot(Math.PI + Math.sin(b.spinA)*1.1, 210, 6, '#ffd400'); } }
   if (b.hp <= 0){ b.hp = 0; b.dead = true; bullets = []; flash = 1; banner('💥 IRON VULTURE DESTROYED! 💥', 'You did it!'); tone(120, 30, 1.4, .18, 'sawtooth'); }
 }
 function drawBoss(){ const b = boss; if (!b) return; const T = b.t; cx.save(); cx.translate(b.x, b.y); if (b.dead) cx.rotate(b.deathT*.8);
@@ -441,7 +441,7 @@ function update(dt){
   gums.forEach(g => { g.x += g.vx*dt; g.vy += 600*dt; g.y += g.vy*dt; if (g.y > H - GROUND - 13){ g.y = H - GROUND - 13; g.vy = -Math.abs(g.vy)*.95 - 120; } if (g.y < 13){ g.y = 13; g.vy = Math.abs(g.vy); }
     if (state === 'play' && Math.hypot(g.x - P.x, g.y - P.y) < hitbox() + 11*(1 - .25*U('sugar')) && U('fire') < 2) die(); }); gums = gums.filter(g => g.x > -40);
   fireballs.forEach(f => { f.x += f.vx*dt; f.y += f.vy*dt; f.rot += f.vr*dt; if (state === 'play' && Math.hypot(f.x - P.x, f.y - P.y) < hitbox() + f.r*.85 && U('fire') < 1) die(); }); fireballs = fireballs.filter(f => f.x > -60);
-  if (boss || bullets.length){ bullets.forEach(u => { u.x += u.vx*dt; u.y += u.vy*dt; if (state === 'play' && Math.hypot(u.x - P.x, u.y - P.y) < hitbox() + u.r*.8) die(); }); bullets = bullets.filter(u => u.x > -30 && u.x < W + 30 && u.y > -30 && u.y < H + 30); }
+  if (boss || bullets.length){ bullets.forEach(u => { u.x += u.vx*dt; u.y += u.vy*dt; if (state === 'play' && Math.hypot(u.x - P.x, u.y - P.y) < hitbox()*.8 + u.r*.5) die(); }); bullets = bullets.filter(u => u.x > -30 && u.x < W + 30 && u.y > -30 && u.y < H + 30); }
   if (state === 'play'){
     if (boss){ updateBoss(dt); } else spawnT -= dt;
     if (!boss && spawnT <= 0){ spawnT = C.spacing/C.speed; const mid = H*.45 + rnd(-C.varY, C.varY)*.5; pipes.push({x:W + 60, base:clamp(mid, 120, H - GROUND - 120), gap:C.gap*(.9 + bird.size*.12), move:C.move*(Math.random()<.7 ? 1 : 0), ph:rnd(0,6), passed:false, gem:Math.random() < .22*(1 + .12*U('finder')*3/3) + .12*U('finder'), w:78, style:['cane','choc','ice','gummy','lolli'][Math.floor(Math.random()*5)], hue:Math.floor(Math.random()*4)}); }
