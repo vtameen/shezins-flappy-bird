@@ -82,7 +82,7 @@ canvas{display:block;width:100vw;height:100vh}
 <div id="menu" class="ov"><div class="card">
   <h1 style="font-size:40px">SHEZIN'S<br><span>FLAPPY BIRD</span></h1>
   <p><b>Tap, click or press Space to flap.</b> Fly through the gaps.<br>Earn <b>🪙 coins</b> for every gap and big bonuses for every level. Grab <b>💎 diamonds</b> in the gaps to <b>upgrade</b> your birds — every kind of bird has its own upgrades. Spend coins in the <b>Bird Shop</b> — 68 birds, each looks and flies differently. The coolest birds cost the most!</p>
-  <p>Clear 5 gaps to level up. Every 10 levels you fly to a <b>new world</b> with its own hazard — each one harder than the last, all the way to <b>Level 99</b>. Every level is a checkpoint — if you crash, you restart at the beginning of that level.</p>
+  <p>Clear 5 gaps to level up. Every 10 levels you fly to a <b>new world</b> with its own hazard — each one harder than the last, all the way to <b>Level 150</b> — where a giant <b>boss</b> is waiting. Every level is a checkpoint — if you crash, you restart at the beginning of that level.</p>
   <button class="btn" id="bPlay">PLAY</button>
   <button class="btn ghost" id="bBirds">🛒 BIRD SHOP</button>
   <a id="apkLink" class="btn blue" style="text-decoration:none;box-sizing:border-box" href="https://github.com/vtameen/shezins-flappy-bird/releases/latest/download/ShezinsFlappyBird.apk">📱 GET THE ANDROID APP</a>
@@ -116,8 +116,8 @@ canvas{display:block;width:100vw;height:100vh}
   <button class="btn ghost" id="bClose" style="margin-top:8px;flex:none">⬅ EXIT SHOP</button>
 </div></div>
 <div id="win" class="ov hidden"><div class="card">
-  <div class="big">LEVEL 99!</div>
-  <p>You reached the max level. Legendary flying! 🏆</p>
+  <div class="big" style="font-size:46px">🏆 BOSS DEFEATED!</div>
+  <p>You beat all <b>150 levels</b> and the <b>Iron Vulture</b>! Legendary flying!<br><b>+5,000 🪙 &nbsp; +100 💎</b></p>
   <button class="btn" id="bWin">KEEP FLYING</button>
 </div></div>
 
@@ -126,7 +126,7 @@ canvas{display:block;width:100vw;height:100vh}
 'use strict';
 const $ = id => document.getElementById(id);
 const cv = $('c'); let cx = cv.getContext('2d'); const off = document.createElement('canvas'), ox = off.getContext('2d');
-const MAX_LEVEL = 99, PER_LEVEL = 5;
+const MAX_LEVEL = 150, PER_LEVEL = 5;
 let W = 0, H = 640, scale = 1;
 function resize(){ const dpr = Math.min(devicePixelRatio || 1, 2); cv.width = off.width = innerWidth*dpr; cv.height = off.height = innerHeight*dpr; scale = cv.height/H; W = cv.width/scale; }
 addEventListener('resize', resize); resize();
@@ -223,8 +223,8 @@ let pipes = [], level = 1, passed = 0, total = 0, state = 'menu', t = 0, spawnT 
 
 
 // ================= LEVEL DIFFICULTY =================
-function cfg(L){ const k = (L-1)/(MAX_LEVEL-1), w = Math.floor((L-1)/10);
-  return { speed: 150 + 190*Math.pow(k,.85) + w*4 + (w===1 ? 25 : 0) - (w===9 ? 25 : 0), gap: 205 - 92*Math.pow(k,.8) - (w===5 ? 14 : 0) + (w===9 ? 22 : 0), spacing: 285 - 85*k, move: (L >= 15 ? Math.min(90, 14 + (L-15)*1.1) : 0)*(w===9 ? .65 : 1), moveSpeed: (.8 + k*1.6)*(w===6 ? 1.6 : w===9 ? 1.1 : 1), varY: 110 + 130*k, w }; }
+function cfg(L){ const k = (L-1)/(MAX_LEVEL-1), wi = Math.floor((L-1)/10), w = L >= MAX_LEVEL ? -1 : wi % 10;
+  return { speed: 150 + 190*Math.pow(k,.85) + wi*4 + (w===1 ? 25 : 0) - (w===9 ? 25 : 0), gap: 205 - 92*Math.pow(k,.8) - (w===5 ? 14 : 0) + (w===9 ? 22 : 0), spacing: 285 - 85*k, move: (L >= 15 ? Math.min(90, 14 + (L-15)*1.1) : 0)*(w===9 ? .65 : 1), moveSpeed: (.8 + k*1.6)*(w===6 ? 1.6 : w===9 ? 1.1 : 1), varY: 110 + 130*k, w }; }
 // each new world adds its own hazard on top of the rising speed / shrinking gaps
 const HAZARDS = ['Warm-up skies', 'Faster winds — everything speeds up', 'Darkness — you can only see near your bird', 'Blizzard — whiteouts hide the pipes', 'Heat thermals push you up and down',
   'Thick jungle — tighter gaps', 'Wobbly crystal pillars move faster', 'Storm gusts shove you around + lightning', 'ZERO-G — low gravity and flying asteroids', 'SUGAR RUSH — wobbly candy pillars and bouncing gumballs!'];
@@ -241,7 +241,9 @@ const THEMES = [
   {sky:['#05030f','#24164f'], hill:'#6a6a7e', hill2:'#3e3a5a', ground:'#4e4e5e', grass:'#9a9ab0', pipe:['#d8dce6','#6a7088'], cloud:'#7a5ad0', name:'Outer Space', stars:true, space:true},
   {sky:['#ff8fcf','#bfe9ff'], hill:'#6b3a1f', hill2:'#ffb3dc', ground:'#4a2614', grass:'#ff7ec2', pipe:['#ffffff','#e8261b'], cloud:'#ffd6ef', name:'Candyland', candy:true},
 ];
-const theme = () => themeOverride || THEMES[Math.floor((level-1)/10) % THEMES.length];
+const THEMES2 = THEMES.map(t => Object.assign({}, t, {name: t.name + ' II'}));
+const BOSS_THEME = {sky:['#1a0308','#6a1414'], hill:'#3a0c14', hill2:'#24060c', ground:'#1a0a0a', grass:'#7a1a1a', pipe:['#6a6a72','#2a2a30'], cloud:'#5a2020', name:'Boss Lair', stars:true, embers:true};
+const theme = () => themeOverride || (level >= MAX_LEVEL ? BOSS_THEME : (Math.floor((level-1)/10) >= 10 ? THEMES2 : THEMES)[Math.floor((level-1)/10) % THEMES.length]);
 
 // ================= AUDIO =================
 let AC = null;
@@ -311,11 +313,60 @@ function addCoins(n){ save.coins += n; runCoins += n; store(); const el = $('coi
 addEventListener('keydown', e => { if (e.code === 'Space' || e.code === 'ArrowUp'){ e.preventDefault(); if (!e.repeat && $('book').classList.contains('hidden') && $('upg').classList.contains('hidden') && $('adm').classList.contains('hidden')) action(); } });
 
 // ================= GAME FLOW =================
-function hud(){ $('score').textContent = total; $('lvl').textContent = level >= MAX_LEVEL ? 'LEVEL 99 · MAX' : 'LEVEL ' + level; $('lvlFill').style.width = (level >= MAX_LEVEL ? 100 : passed/PER_LEVEL*100) + '%';
+function hud(){ $('score').textContent = total; $('lvl').textContent = level >= MAX_LEVEL ? 'LEVEL 150 · BOSS' : 'LEVEL ' + level; $('lvlFill').style.width = (level >= MAX_LEVEL ? 100 : passed/PER_LEVEL*100) + '%';
   $('birdName').textContent = '🐦 ' + title(bird.name) + ' · ' + theme().name; $('found').textContent = `Birds ${save.owned.length}/${NAMES.length} · Best level ${save.best}`; $('coins').textContent = '🪙 ' + save.coins; $('gems').textContent = '💎 ' + save.gems + (shields ? '  🛡️×' + shields.toLocaleString() : ''); }
 let runCoins = 0;
-function begin(fromLevel){ audio(); runCoins = 0; runGems = 0; invuln = 0; shields = Math.max(U('shield') + U('lives')*3 + (U('fire') >= 3 ? 1 : 0), save.adminShields || 0); level = fromLevel; startLevel = fromLevel; passed = 0; total = 0; pipes = []; fireballs = []; gums = []; gust = 0; flash = 0; P.y = H*.42; P.vy = 0; P.alive = true; spawnT = .6; state = 'ready'; wonShown = level >= MAX_LEVEL;
-  ['menu','over','book','win'].forEach(i => $(i).classList.add('hidden')); hud(); banner('Level ' + level, theme().name + ' · tap or Space to start'); }
+// ================= BOSS (level 150) =================
+let boss = null, bullets = [];
+function startBoss(){ boss = {hp:60, max:60, x:W + 160, y:H*.4, t:0, aimT:1.6, spreadT:3.2, ringT:4.5, spinT:0, spinA:0, dead:false, deathT:0, muzzle:0}; pipes = []; bullets = []; fireballs = []; gums = [];
+  banner('⚠ BOSS FIGHT ⚠', 'The Iron Vulture! Dodge its bullets for 60 seconds'); [196,185,175,165].forEach((f,i) => tone(f, f*.98, .35, .12, 'sawtooth', i*.25)); }
+function shoot(ang, sp, r = 7, col = '#ff3a3a'){ const b = boss, mx = b.x - 78, my = b.y - 4; bullets.push({x:mx, y:my, vx:Math.cos(ang)*sp, vy:Math.sin(ang)*sp, r, col}); b.muzzle = .12; }
+function updateBoss(dt){ const b = boss; b.t += dt; const tx = W - 140; b.x += (tx - b.x)*Math.min(1, dt*1.6); b.y = H*.42 + Math.sin(b.t*.85)*H*.2 + Math.sin(b.t*2.1)*14; b.muzzle = Math.max(0, b.muzzle - dt);
+  if (b.dead){ b.deathT += dt; b.y += b.deathT*b.deathT*90*dt*10; if (Math.random() < .6) puffs.push({x:b.x + rnd(-60,60), y:b.y + rnd(-40,40), vx:rnd(-120,120), vy:rnd(-160,40), r:rnd(8,20), t:rnd(.4,.8), c:['#ffd400','#ff6a1f','#3a3a3a','#ffffff'][Math.floor(Math.random()*4)]});
+    if (b.deathT > 2.6 && !b.paid){ b.paid = true; addCoins(5000); addGems(100); if (level > save.best) save.best = level; store(); [523,659,784,1046,1318].forEach((f,i) => tone(f,f,.25,.1,'triangle',i*.12)); state = 'paused'; setTimeout(() => $('win').classList.remove('hidden'), 300); } return; }
+  if (b.x > W) return; // still flying in
+  b.hp -= dt; const ph = b.hp > 40 ? 0 : b.hp > 20 ? 1 : 2; const toBird = Math.atan2(P.y - (b.y - 4), P.x - (b.x - 78));
+  b.aimT -= dt; if (b.aimT <= 0){ b.aimT = [1.05, .8, .6][ph]; shoot(toBird, 250 + ph*35); if (ph === 2){ shoot(toBird - .12, 250); shoot(toBird + .12, 250); } tone(700, 300, .08, .05, 'square'); }
+  b.spreadT -= dt; if (b.spreadT <= 0){ b.spreadT = [3.2, 2.7, 2.3][ph]; const n = ph === 2 ? 7 : 5; for (let i=0;i<n;i++) shoot(toBird + (i - (n-1)/2)*.16, 200, 6, '#ff8a1f'); tone(400, 150, .15, .07, 'sawtooth'); }
+  if (ph >= 1){ b.ringT -= dt; if (b.ringT <= 0){ b.ringT = ph === 1 ? 4.2 : 3.2; const n = ph === 1 ? 12 : 16, off = Math.random()*6; for (let i=0;i<n;i++) shoot(off + i/n*Math.PI*2, 165, 7, '#d04aff'); tone(220, 90, .3, .08, 'sawtooth'); } }
+  if (ph === 2 && Math.floor(b.t/2.5) % 2 === 0){ b.spinT -= dt; if (b.spinT <= 0){ b.spinT = .1; b.spinA += .42; shoot(Math.PI + Math.sin(b.spinA)*1.1, 210, 6, '#ffd400'); } }
+  if (b.hp <= 0){ b.hp = 0; b.dead = true; bullets = []; flash = 1; banner('💥 IRON VULTURE DESTROYED! 💥', 'You did it!'); tone(120, 30, 1.4, .18, 'sawtooth'); }
+}
+function drawBoss(){ const b = boss; if (!b) return; const T = b.t; cx.save(); cx.translate(b.x, b.y); if (b.dead) cx.rotate(b.deathT*.8);
+  const flapA = Math.sin(T*5)*.45; const metal = (x0, y0, r) => { const g = cx.createRadialGradient(x0 - r*.3, y0 - r*.4, r*.1, x0, y0, r); g.addColorStop(0, '#9aa0aa'); g.addColorStop(.5, '#4a4e58'); g.addColorStop(1, '#1e2026'); return g; };
+  // far wing
+  cx.save(); cx.translate(10, -20); cx.rotate(-flapA - .3); cx.fillStyle = '#2a2c34'; cx.beginPath(); cx.moveTo(0,0); cx.lineTo(60,-90); cx.lineTo(95,-70); cx.lineTo(110,-40); cx.lineTo(100,-10); cx.closePath(); cx.fill(); cx.restore();
+  // tail
+  cx.fillStyle = '#2e3038'; cx.beginPath(); cx.moveTo(55, 0); cx.lineTo(120, -18); cx.lineTo(112, 0); cx.lineTo(124, 14); cx.lineTo(56, 18); cx.fill();
+  // body
+  cx.fillStyle = metal(0, 0, 75); cx.beginPath(); cx.ellipse(0, 0, 72, 44, -.08, 0, 7); cx.fill();
+  cx.strokeStyle = 'rgba(0,0,0,.35)'; cx.lineWidth = 2; for (let i=-2;i<=2;i++){ cx.beginPath(); cx.arc(10 + i*18, 4, 34, 1.1, 2.1); cx.stroke(); }
+  cx.fillStyle = '#ff2a2a'; cx.globalAlpha = .6 + .4*Math.sin(T*6); cx.beginPath(); cx.arc(8, 10, 7, 0, 7); cx.fill(); cx.globalAlpha = 1;
+  // legs + talons
+  cx.strokeStyle = '#1a1a1e'; cx.lineWidth = 6; cx.beginPath(); cx.moveTo(-10, 38); cx.lineTo(-18, 62); cx.moveTo(20, 38); cx.lineTo(16, 62); cx.stroke(); cx.lineWidth = 3; for (const lx of [-18, 16]){ cx.beginPath(); cx.moveTo(lx, 62); cx.lineTo(lx - 10, 70); cx.moveTo(lx, 62); cx.lineTo(lx, 72); cx.moveTo(lx, 62); cx.lineTo(lx + 10, 70); cx.stroke(); }
+  // head
+  cx.fillStyle = metal(-62, -26, 34); cx.beginPath(); cx.arc(-58, -24, 32, 0, 7); cx.fill();
+  cx.fillStyle = '#14161a'; cx.beginPath(); cx.moveTo(-40, -50); cx.lineTo(-20, -62); cx.lineTo(-30, -42); cx.fill();
+  // beak cannon
+  cx.fillStyle = '#c8a040'; cx.beginPath(); cx.moveTo(-84, -30); cx.quadraticCurveTo(-112, -24, -104, -6); cx.lineTo(-84, -12); cx.fill(); cx.fillStyle = '#3a3a3a'; cx.fillRect(-92, -12, 18, 10);
+  if (b.muzzle > 0){ const g = cx.createRadialGradient(-80, -4, 2, -80, -4, 26); g.addColorStop(0, '#fff6c0'); g.addColorStop(.4, '#ff8a1f'); g.addColorStop(1, 'rgba(255,60,0,0)'); cx.fillStyle = g; cx.beginPath(); cx.arc(-80, -4, 26, 0, 7); cx.fill(); }
+  // glowing eye
+  const eg = cx.createRadialGradient(-64, -30, 1, -64, -30, 16); eg.addColorStop(0, '#fff'); eg.addColorStop(.25, '#ff2a2a'); eg.addColorStop(1, 'rgba(255,0,0,0)'); cx.fillStyle = eg; cx.beginPath(); cx.arc(-64, -30, 16, 0, 7); cx.fill();
+  cx.strokeStyle = '#ff2a2a'; cx.lineWidth = 3; cx.beginPath(); cx.moveTo(-78, -42); cx.lineTo(-52, -36); cx.stroke();
+  // near wing
+  cx.save(); cx.translate(0, -14); cx.rotate(flapA - .1); const wg = cx.createLinearGradient(0, 0, 0, -120); wg.addColorStop(0, '#4a4e58'); wg.addColorStop(1, '#1e2026'); cx.fillStyle = wg;
+  cx.beginPath(); cx.moveTo(-20, 0); cx.lineTo(30, -110); cx.lineTo(70, -100); cx.lineTo(95, -70); cx.lineTo(110, -40); cx.lineTo(90, -10); cx.lineTo(40, 6); cx.closePath(); cx.fill();
+  cx.strokeStyle = 'rgba(255,255,255,.12)'; cx.lineWidth = 2; for (let i=0;i<4;i++){ cx.beginPath(); cx.moveTo(0, -4); cx.lineTo(40 + i*20, -100 + i*20); cx.stroke(); } cx.restore();
+  // damage sparks as health drops
+  if (!b.dead && b.hp < 40 && Math.random() < (b.hp < 20 ? .5 : .2)) puffs.push({x:b.x + rnd(-50,50), y:b.y + rnd(-30,30), vx:rnd(-60,60), vy:rnd(-120,-20), r:rnd(3,6), t:rnd(.3,.5), c:Math.random() < .5 ? '#ffd400' : '#555'});
+  cx.restore();
+  // health bar
+  if (!b.dead){ const bw = Math.min(420, W*.6), bx = W/2 - bw/2, by = 92; cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(bx - 4, by - 4, bw + 8, 22); const fr = b.hp/b.max; cx.fillStyle = fr > .66 ? '#ff3a3a' : fr > .33 ? '#ff8a1f' : '#ffd400'; cx.fillRect(bx, by, bw*fr, 14);
+    cx.fillStyle = '#fff'; cx.font = '700 14px Fredoka, Inter'; cx.textAlign = 'center'; cx.fillText('IRON VULTURE  ·  survive ' + Math.ceil(b.hp) + 's', W/2, by - 8); }
+}
+function drawBullets(){ for (const u of bullets){ const g = cx.createRadialGradient(u.x, u.y, 1, u.x, u.y, u.r*2.2); g.addColorStop(0, '#fff'); g.addColorStop(.35, u.col); g.addColorStop(1, 'rgba(0,0,0,0)'); cx.fillStyle = g; cx.beginPath(); cx.arc(u.x, u.y, u.r*2.2, 0, 7); cx.fill(); } }
+function begin(fromLevel){ audio(); boss = null; bullets = []; runCoins = 0; runGems = 0; invuln = 0; shields = Math.max(U('shield') + U('lives')*3 + (U('fire') >= 3 ? 1 : 0), save.adminShields || 0); level = fromLevel; startLevel = fromLevel; passed = 0; total = 0; pipes = []; fireballs = []; gums = []; gust = 0; flash = 0; P.y = H*.42; P.vy = 0; P.alive = true; spawnT = .6; state = 'ready'; wonShown = level >= MAX_LEVEL;
+  ['menu','over','book','win'].forEach(i => $(i).classList.add('hidden')); hud(); if (level >= MAX_LEVEL){ startBoss(); banner('⚠ LEVEL 150 — BOSS ⚠', 'Tap or Space to start · dodge the bullets!'); } else banner('Level ' + level, theme().name + ' · tap or Space to start'); }
 let cutLen = 4.6, hatch = false, hatched = [0,0,0]; const trail = [];
 function startCut(){ setTimeout(() => addGems(5), 2400); hatch = Math.floor((level-1)/10) === 3; cutLen = hatch ? 10.2 : 4.6; hatched = [0,0,0]; prevTheme = THEMES[(Math.floor((level-1)/10) - 1 + THEMES.length) % THEMES.length]; state = 'cut'; cutT = 0; pipes = []; fireballs = []; gums = []; gust = 0; P.vy = 0;
   [392,494,587,784,988].forEach((f,i) => tone(f, f, .3, .07, 'sine', i*.12)); }
@@ -323,7 +374,7 @@ function action(){ audio();
   if (state === 'menu'){ begin(1); return; }
   if (state === 'cut'){ if (cutT > 1) cutT = cutLen; return; }
   if (state === 'ready'){ state = 'play'; }
-  if (state === 'play'){ P.vy = -330*bird.flap*(bird.grav >= 1.3 ? 1.08 : 1)*(1 + .07*U('wing'))*(level > 80 && level <= 90 ? .82 : 1); P.flapT = .28; sfx.flap(); }
+  if (state === 'play'){ P.vy = -330*bird.flap*(bird.grav >= 1.3 ? 1.08 : 1)*(1 + .07*U('wing'))*(theme().space ? .82 : 1); P.flapT = .28; sfx.flap(); }
 }
 function die(){ if (state !== 'play' || window.__god || invuln > 0) return;
   if (shields > 0){ shields--; invuln = 1.4; P.vy = -280; flash = .6; tone(300, 900, .3, .1, 'sine'); for (let i=0;i<20;i++) puffs.push({x:P.x, y:P.y, vx:rnd(-200,200), vy:rnd(-200,200), r:rnd(4,9), t:rnd(.3,.6), c:'#8af0ff'}); banner('🛡️ Shield saved you!', shields.toLocaleString() + ' left this run'); hud(); return; } state = 'dead'; P.alive = false; sfx.hit(); for (let i=0;i<14;i++) feathers.push({x:P.x, y:P.y, vx:rnd(-120,120), vy:rnd(-200,40), r:rnd(0,6.28), vr:rnd(-6,6), t:1.6, c:Math.random()<.5 ? bird.wing : bird.body});
@@ -349,7 +400,7 @@ $('book').addEventListener('pointerdown', e => { if (e.target.id === 'book') clo
 addEventListener('keydown', e => { if (e.key === 'Escape'){ if (!$('upg').classList.contains('hidden')) $('upgClose').onclick(); else if (!$('book').classList.contains('hidden')) closeShop(); } });
 const sc = $('shopScroll'); const hint = () => { $('scrollHint').style.opacity = sc.scrollTop + sc.clientHeight >= sc.scrollHeight - 8 ? 0 : 1; }; sc.addEventListener('scroll', hint);
 document.querySelectorAll('.jump button').forEach(b => b.onclick = () => { const j = b.dataset.j; sc.scrollTo({top: j === 'top' ? 0 : j === 'end' ? sc.scrollHeight : sc.scrollHeight/2 - sc.clientHeight/2, behavior:'smooth'}); });
-$('bWin').onclick = () => { $('win').classList.add('hidden'); state = 'play'; };
+$('bWin').onclick = () => { $('win').classList.add('hidden'); boss = null; bullets = []; state = 'play'; spawnT = .5; };
 cv.addEventListener('pointerdown', e => { e.preventDefault(); action(); });
 
 // ================= UPDATE =================
@@ -390,9 +441,10 @@ function update(dt){
   gums.forEach(g => { g.x += g.vx*dt; g.vy += 600*dt; g.y += g.vy*dt; if (g.y > H - GROUND - 13){ g.y = H - GROUND - 13; g.vy = -Math.abs(g.vy)*.95 - 120; } if (g.y < 13){ g.y = 13; g.vy = Math.abs(g.vy); }
     if (state === 'play' && Math.hypot(g.x - P.x, g.y - P.y) < hitbox() + 11*(1 - .25*U('sugar')) && U('fire') < 2) die(); }); gums = gums.filter(g => g.x > -40);
   fireballs.forEach(f => { f.x += f.vx*dt; f.y += f.vy*dt; f.rot += f.vr*dt; if (state === 'play' && Math.hypot(f.x - P.x, f.y - P.y) < hitbox() + f.r*.85 && U('fire') < 1) die(); }); fireballs = fireballs.filter(f => f.x > -60);
+  if (boss || bullets.length){ bullets.forEach(u => { u.x += u.vx*dt; u.y += u.vy*dt; if (state === 'play' && Math.hypot(u.x - P.x, u.y - P.y) < hitbox() + u.r*.8) die(); }); bullets = bullets.filter(u => u.x > -30 && u.x < W + 30 && u.y > -30 && u.y < H + 30); }
   if (state === 'play'){
-    spawnT -= dt;
-    if (spawnT <= 0){ spawnT = C.spacing/C.speed; const mid = H*.45 + rnd(-C.varY, C.varY)*.5; pipes.push({x:W + 60, base:clamp(mid, 120, H - GROUND - 120), gap:C.gap*(.9 + bird.size*.12), move:C.move*(Math.random()<.7 ? 1 : 0), ph:rnd(0,6), passed:false, gem:Math.random() < .22*(1 + .12*U('finder')*3/3) + .12*U('finder'), w:78, style:['cane','choc','ice','gummy','lolli'][Math.floor(Math.random()*5)], hue:Math.floor(Math.random()*4)}); }
+    if (boss){ updateBoss(dt); } else spawnT -= dt;
+    if (!boss && spawnT <= 0){ spawnT = C.spacing/C.speed; const mid = H*.45 + rnd(-C.varY, C.varY)*.5; pipes.push({x:W + 60, base:clamp(mid, 120, H - GROUND - 120), gap:C.gap*(.9 + bird.size*.12), move:C.move*(Math.random()<.7 ? 1 : 0), ph:rnd(0,6), passed:false, gem:Math.random() < .22*(1 + .12*U('finder')*3/3) + .12*U('finder'), w:78, style:['cane','choc','ice','gummy','lolli'][Math.floor(Math.random()*5)], hue:Math.floor(Math.random()*4)}); }
     for (const p of pipes){ p.x -= C.speed*dt; p.y = p.base + Math.sin(t*C.moveSpeed + p.ph)*p.move;
       const r = hitbox();
       if (state !== 'play') break;
@@ -400,7 +452,7 @@ function update(dt){
       if (P.x + r > p.x && P.x - r < p.x + p.w){ if (P.y - r < p.y - p.gap/2 || P.y + r > p.y + p.gap/2) die(); }
       if (!p.passed && p.x + p.w < P.x){ p.passed = true; total++; passed++; sfx.point(); addCoins(1 + U('magnet'));
         if (passed >= PER_LEVEL && level < MAX_LEVEL){ passed = 0; const bonus = 5 + level; addCoins(bonus); level++; sfx.level(); if (level > save.best){ save.best = level; store(); }
-          if ((level-1) % 10 === 0 && level < MAX_LEVEL){ startCut(); } else banner(level >= MAX_LEVEL ? '🏆 LEVEL 99 — MAX!' : 'Level ' + level, '+' + bonus + ' 🪙 level bonus'); if (level >= MAX_LEVEL && !wonShown){ wonShown = true; state = 'paused'; setTimeout(() => $('win').classList.remove('hidden'), 600); } }
+          if (level >= MAX_LEVEL){ startBoss(); } else if ((level-1) % 10 === 0){ startCut(); } else banner('Level ' + level, '+' + bonus + ' 🪙 level bonus'); }
         if (level >= MAX_LEVEL) passed = PER_LEVEL;
         hud(); } }
     pipes = pipes.filter(p => p.x > -120);
@@ -656,6 +708,7 @@ function draw(dt){
     themeOverride = prevTheme; drawBackground(dt); drawWeather(dt); drawGround(); themeOverride = null;
     if (p > 0){ const keep = cx; cx = ox; cx.setTransform(scale, 0, 0, scale, 0, 0); drawBackground(0); drawWeather(0); drawGround(); cx = keep; cx.setTransform(1,0,0,1,0,0); cx.globalAlpha = p; cx.drawImage(off, 0, 0); cx.globalAlpha = 1; cx.setTransform(scale, 0, 0, scale, 0, 0); }
   } else { drawBackground(dt); pipes.forEach(drawPipe); drawWeather(dt); drawGround(); }
+  drawBoss(); drawBullets();
   if (state !== 'cut') pipes.forEach(p => { if (!p.gem) return; const gx = p.x + p.w/2, gy = p.y + Math.sin(t*4 + p.ph)*4; cx.save(); cx.translate(gx, gy);
     const gl = cx.createRadialGradient(0,0,2,0,0,26); gl.addColorStop(0,'rgba(140,240,255,.6)'); gl.addColorStop(1,'rgba(140,240,255,0)'); cx.fillStyle = gl; cx.beginPath(); cx.arc(0,0,26,0,7); cx.fill();
     cx.fillStyle = '#5fe0ff'; cx.beginPath(); cx.moveTo(-12,-4); cx.lineTo(-6,-11); cx.lineTo(6,-11); cx.lineTo(12,-4); cx.lineTo(0,13); cx.closePath(); cx.fill();
@@ -667,7 +720,7 @@ function draw(dt){
     cx.fillStyle = '#7a7068'; cx.beginPath(); for (let i=0;i<9;i++){ const a = i/9*6.283, rr = f.r*(.8 + .25*hash(f.seed + i)); cx.lineTo(Math.cos(a)*rr, Math.sin(a)*rr); } cx.closePath(); cx.fill();
     cx.fillStyle = '#5a524c'; for (let i=0;i<3;i++){ cx.beginPath(); cx.arc((hash(f.seed + i*3) - .5)*f.r, (hash(f.seed + i*5) - .5)*f.r, f.r*.22, 0, 7); cx.fill(); }
     cx.fillStyle = 'rgba(255,255,255,.18)'; cx.beginPath(); cx.arc(-f.r*.3, -f.r*.3, f.r*.35, 0, 7); cx.fill(); cx.restore(); });
-  const wNow = Math.floor((level-1)/10);
+  const wRaw = Math.floor((level-1)/10), wNow = wRaw % 10;
   if (state !== 'cut' && state !== 'menu' && wNow === 3){ cx.fillStyle = `rgba(240,248,255,${(.35 + .3*Math.max(0, Math.sin(t*.9)))*(1 - .3*U('goggles'))})`; cx.fillRect(0, 0, W, H); }
   feathers.forEach(f => { cx.save(); cx.translate(f.x, f.y); cx.rotate(f.r); cx.globalAlpha = Math.min(1, f.t); cx.fillStyle = f.c; cx.beginPath(); cx.ellipse(0, 0, 6, 2.5, 0, 0, 7); cx.fill(); cx.restore(); }); cx.globalAlpha = 1;
   // baby birds (hatched in World 4) follow you through every level and world
@@ -683,7 +736,7 @@ function draw(dt){
   if (flash > 0){ cx.fillStyle = `rgba(255,255,255,${flash*.6})`; cx.fillRect(0, 0, W, H); }
   if (state === 'cut' && hatch && cutT > 2.6) drawHatch();
   if (state === 'cut'){ const ts = hatch ? cutLen - 2.2 : 2, a = clamp(Math.min((cutT - ts)/.4, (cutLen - cutT)/.4), 0, 1); if (a > 0){ cx.globalAlpha = a; cx.textAlign = 'center'; cx.fillStyle = 'rgba(0,0,0,.35)'; cx.fillRect(0, H*.16, W, 150);
-    cx.fillStyle = '#ffe14d'; cx.font = '700 20px Fredoka, Inter'; cx.fillText('WORLD ' + (wNow + 1) + ' OF 10', W/2, H*.16 + 34);
+    cx.fillStyle = '#ffe14d'; cx.font = '700 20px Fredoka, Inter'; cx.fillText('WORLD ' + (wRaw + 1) + ' OF 15', W/2, H*.16 + 34);
     cx.fillStyle = '#fff'; cx.font = '700 44px Fredoka, Inter'; cx.fillText(theme().name, W/2, H*.16 + 82);
     cx.font = '600 17px Fredoka, Inter'; cx.fillText('⚠ ' + HAZARDS[wNow], W/2, H*.16 + 116); cx.font = '600 13px Fredoka, Inter'; cx.globalAlpha = a*.75; cx.fillText('tap to skip', W/2, H*.16 + 140); cx.globalAlpha = 1; } }
   puffs.forEach(p => { cx.globalAlpha = Math.max(0, p.t*1.4); cx.fillStyle = p.c; cx.beginPath(); cx.arc(p.x, p.y, p.r*(1.3 - p.t), 0, 7); cx.fill(); }); cx.globalAlpha = 1;
@@ -710,7 +763,8 @@ admIn.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Esc
   log('> ' + v, 'me'); try { runCmd(v); } catch(err){ log('⚠ ' + err.message, 'err'); } });
 const HELP = `coins 5000      set coins   (coins +500 adds)
 gems 200        set diamonds (gems +50 adds)
-level 45        jump to a level (1-99)
+level 45        jump to a level (1-150)
+boss            fight the level 150 boss
 world 9         jump to the start of a world (1-10)
 bird phoenix    unlock + use any bird
 birds           list every bird name
@@ -724,7 +778,7 @@ speed 0.5       game speed (0.25 - 3)
 gravity 0.5     gravity multiplier (0.2 - 3)
 cutscene        play the next world's cutscene
 hatch           play the egg-hatching cutscene
-win             jump to level 99
+win             jump to level 150 (boss)
 rich            999,999 coins + 9,999 diamonds
 reset confirm   wipe all progress
 lock            lock the console again
@@ -741,7 +795,7 @@ function runCmd(line){ const [cmd, ...rest] = line.split(/\s+/), arg = rest.join
     case 'rich': save.coins = 999999; save.gems = 9999; store(); hud(); log('🤑 You are rich: 999,999 🪙 and 9,999 💎'); break;
     case 'level': case 'lvl': { const L = clamp(Math.round(num(arg)), 1, MAX_LEVEL); hideOverlays(); begin(L); admPaused = false; log('🚀 Jumped to level ' + L + ' (' + theme().name + ')'); break; }
     case 'world': { const w = clamp(Math.round(num(arg)), 1, 10); hideOverlays(); begin((w - 1)*10 + 1); admPaused = false; log('🌍 World ' + w + ': ' + theme().name); break; }
-    case 'win': hideOverlays(); begin(MAX_LEVEL); admPaused = false; log('🏆 Level 99!'); break;
+    case 'win': case 'boss': hideOverlays(); begin(MAX_LEVEL); admPaused = false; log('⚠ Level 150 — boss fight!'); closeAdm(); break;
     case 'bird': { const n = findBird(arg); if (!n) throw new Error('no bird called "' + arg + '" — type birds'); if (!save.owned.includes(n)) save.owned.push(n); store(); equip(n); hud(); log('🐦 You are now a ' + title(n)); break; }
     case 'birds': log(RANK.map(title).join(', ')); break;
     case 'unlockall': save.owned = NAMES.slice(); store(); hud(); log('🔓 All ' + NAMES.length + ' birds unlocked'); break;
