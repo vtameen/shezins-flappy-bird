@@ -316,7 +316,7 @@ function hud(){ $('score').textContent = total; $('lvl').textContent = level >= 
 let runCoins = 0;
 function begin(fromLevel){ audio(); runCoins = 0; runGems = 0; invuln = 0; shields = U('shield') + U('lives')*3 + (U('fire') >= 3 ? 1 : 0); level = fromLevel; startLevel = fromLevel; passed = 0; total = 0; pipes = []; fireballs = []; gums = []; gust = 0; flash = 0; P.y = H*.42; P.vy = 0; P.alive = true; spawnT = .6; state = 'ready'; wonShown = level >= MAX_LEVEL;
   ['menu','over','book','win'].forEach(i => $(i).classList.add('hidden')); hud(); banner('Level ' + level, theme().name + ' · tap or Space to start'); }
-let cutLen = 4.6, hatch = false, hatched = [0,0,0];
+let cutLen = 4.6, hatch = false, hatched = [0,0,0]; const trail = [];
 function startCut(){ setTimeout(() => addGems(5), 2400); hatch = Math.floor((level-1)/10) === 3; cutLen = hatch ? 10.2 : 4.6; hatched = [0,0,0]; prevTheme = THEMES[(Math.floor((level-1)/10) - 1 + THEMES.length) % THEMES.length]; state = 'cut'; cutT = 0; pipes = []; fireballs = []; gums = []; gust = 0; P.vy = 0;
   [392,494,587,784,988].forEach((f,i) => tone(f, f, .3, .07, 'sine', i*.12)); }
 function action(){ audio();
@@ -357,6 +357,7 @@ const GROUND = 70;
 function hitbox(){ return 13*bird.size*(1 - .09*U('slim')); }
 function update(dt){
   t += dt;
+  if (state !== 'menu'){ trail.push({x: state === 'cut' ? P.cx : P.x, y: P.y}); if (trail.length > 90) trail.shift(); }
   if ((bird.name === 'phoenix' || bird.name === 'peacock') && state !== 'menu' && Math.random() < (bird.name === 'phoenix' ? .9 : .25)) puffs.push({x:(state === 'cut' ? P.cx : P.x) - 14, y:P.y + rnd(-6,6), vx:rnd(-160,-60), vy:rnd(-40,40), r:rnd(3,7), t:rnd(.25,.5), c:bird.name === 'phoenix' ? ['#ffd400','#ff8a1f','#ff3a1f'][Math.floor(Math.random()*3)] : ['#1f6fe0','#14915a','#ffd400'][Math.floor(Math.random()*3)]});
   P.x = Math.min(W*.3, 170);
   const C = cfg(level);
@@ -637,7 +638,7 @@ function drawHatch(){ const N = nest(), al = clamp((cutT - 2.8)/.7, 0, 1); if (a
   [5.2, 5.8, 6.4].forEach((ht, i) => { const ex = N.x + (i - 1)*20, ey = N.y - 22;
     if (cutT < ht){ const k = clamp((cutT - 4.2)/(ht - 4.2), 0, 1); egg(ex, ey, Math.sin(t*(14 + i*3))*.35*k*k, cutT > ht - .7 ? (cutT - (ht - .7))/.7 : 0, i*9); }
     else { let bx = ex, by = ey - Math.abs(Math.sin(t*7 + i*1.3))*6, fl = Math.abs(Math.sin(t*16 + i))*.28, rt = 0;
-      if (cutT > 8.4){ const f = cutT - 8.4; bx = ex + f*f*170 + f*40*i; by = ey - f*(150 + i*30) - Math.sin(f*6 + i)*8; rt = -.2; fl = (t*3.6 + i*.1) % .28; }
+      if (cutT > 8.4){ const f = clamp((cutT - 8.4)/1.4, 0, 1), e = f*f*(3 - 2*f), N2 = nest(); const tx = N2.x + ((P.cx - (i + 1)*30) - N2.x)/HS, ty = N2.y + ((P.y + Math.sin(t*3 + i)*6) - N2.y)/HS; bx = ex + (tx - ex)*e; by = ey + (ty - ey)*e; rt = -.1; fl = (t*3.6 + i*.1) % .28; }
       cx.save(); cx.translate(bx, by); cx.scale(.32, .32); drawBird(bird, 0, 0, rt, fl, false); cx.restore();
       if (cutT < ht + .5){ cx.fillStyle = '#fffaf0'; cx.beginPath(); cx.ellipse(bx + 12*(1 + (cutT - ht)*4), ey + 4 - (cutT - ht)*20, 6, 5, .6, 0, 7); cx.fill(); } } });
   // front of nest
@@ -646,7 +647,7 @@ function drawHatch(){ const N = nest(), al = clamp((cutT - 2.8)/.7, 0, 1); if (a
   if (theme().snow){ cx.fillStyle = '#fff'; cx.beginPath(); cx.ellipse(N.x - 20, N.y - 13, 14, 4, 0, Math.PI, 0); cx.ellipse(N.x + 24, N.y - 13, 12, 3.5, 0, Math.PI, 0); cx.fill(); }
   cx.restore(); cx.globalAlpha = 1;
   // caption
-  const msg = cutT < 4.2 ? '' : cutT < 6.6 ? '🥚 The eggs are hatching…' : cutT < 8.4 ? `🐣 Baby ${title(bird.name)}s hatched!` : 'Fly safe, little ones! 💛';
+  const msg = cutT < 4.2 ? '' : cutT < 6.6 ? '🥚 The eggs are hatching…' : cutT < 8.4 ? `🐣 Baby ${title(bird.name)}s hatched!` : 'Follow me, little ones! 💛';
   if (msg && cutT < cutLen - 2.2){ const a = clamp(Math.min((cutT - 4.2)/.4, (cutLen - 2.2 - cutT)/.3), 0, 1); cx.globalAlpha = a; cx.textAlign = 'center'; cx.font = '700 30px Fredoka, Inter'; cx.fillStyle = 'rgba(0,0,0,.25)'; cx.fillText(msg, W/2 + 2, H*.2 + 2); cx.fillStyle = '#fff'; cx.fillText(msg, W/2, H*.2); cx.globalAlpha = 1; } }
 function draw(dt){
   cx.setTransform(scale, 0, 0, scale, 0, 0);
@@ -669,6 +670,12 @@ function draw(dt){
   const wNow = Math.floor((level-1)/10);
   if (state !== 'cut' && state !== 'menu' && wNow === 3){ cx.fillStyle = `rgba(240,248,255,${(.35 + .3*Math.max(0, Math.sin(t*.9)))*(1 - .3*U('goggles'))})`; cx.fillRect(0, 0, W, H); }
   feathers.forEach(f => { cx.save(); cx.translate(f.x, f.y); cx.rotate(f.r); cx.globalAlpha = Math.min(1, f.t); cx.fillStyle = f.c; cx.beginPath(); cx.ellipse(0, 0, 6, 2.5, 0, 0, 7); cx.fill(); cx.restore(); }); cx.globalAlpha = 1;
+  // baby birds (hatched in World 4) follow you through every level and world
+  if (level >= 31 && state !== 'menu' && !(state === 'cut' && hatch) && trail.length > 2){
+    const suitB = state === 'cut' ? (cutT < 2.1 ? prevTheme : theme()).space : !!theme().space;
+    for (let i = 2; i >= 0; i--){ const idx = Math.max(0, trail.length - 1 - (i + 1)*7), pt = trail[idx];
+      const bx = pt.x - (i + 1)*30, by = pt.y + Math.sin(t*3.2 + i*1.7)*5 + (i - 1)*8, fl = (t*3.2 + i*.09) % .28;
+      cx.save(); cx.translate(bx, by); cx.scale(.5, .5); drawBird(bird, 0, 0, state === 'dead' ? 0 : clamp(P.rot*.6, -.3, .5), fl, suitB); cx.restore(); } }
   if ((P.alive || state === 'dead') && !(invuln > 0 && Math.floor(t*14) % 2)) drawBird(bird, state === 'cut' ? P.cx : P.x, P.y, P.rot, Math.max(0, P.flapT), state === 'cut' ? (cutT < 2.1 ? prevTheme : theme()).space : state !== 'menu' && theme().space);
   if (shields > 0 && state === 'play'){ cx.strokeStyle = 'rgba(140,240,255,.55)'; cx.lineWidth = 2.5; cx.beginPath(); cx.arc(P.x, P.y, hitbox() + 14 + Math.sin(t*5)*1.5, 0, 7); cx.stroke(); }
   if (state !== 'cut' && state !== 'menu' && wNow === 2){ const g = cx.createRadialGradient(P.x, P.y, 60*(1 + .35*U('night')), P.x, P.y, 300*(1 + .35*U('night'))); g.addColorStop(0, 'rgba(0,0,10,0)'); g.addColorStop(1, 'rgba(0,0,10,.93)'); cx.fillStyle = g; cx.fillRect(0, 0, W, H); }
